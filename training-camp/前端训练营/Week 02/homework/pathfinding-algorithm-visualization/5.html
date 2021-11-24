@@ -1,0 +1,178 @@
+<style>
+  #container {
+    width: 701px;
+  }
+
+  .cell {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    line-height: 6px;
+    border-bottom: 1px solid white;
+    border-right: 1px solid white;
+    background-color: grey;
+  }
+</style>
+
+<div id="container"></div>
+<button id="save">save</button>
+
+<!-- 寻路优化-启发式搜索（A*） -->
+<script>
+  class Sorted {
+    constructor(data, compare) {
+      console.log(this);
+
+      this.data = data.slice();
+      this.compare = compare || ((a, b) => a - b)
+    }
+    take() {
+      if (!this.data.length) {
+        return;
+      }
+      let min = this.data[0];
+      let minIndex = 0;
+      for (let i = 1; i < this.data.length; i++) {
+        if (this.compare(this.data[i], min) < 0) {
+          min = this.data[i];
+          minIndex = i;
+        }
+      }
+
+      this.data[minIndex] = this.data[this.data.length - 1];
+      this.data.pop();
+      return min;
+    }
+    give(v) {
+      this.data.push(v);
+    }
+    get length() {
+      return this.data.length;
+    }
+  }
+
+
+  let map = localStorage['map'] ? JSON.parse(localStorage['map']) : new Array(10000).fill(0);
+  let keyDown = false;
+  let clear = false;
+  const container = document.getElementById('container');
+
+  function initMap() {
+    for (let y = 0; y < 100; y++) {
+      for (let x = 0; x < 100; x++) {
+        const cell = document.createElement('div');
+        if (map[y * 100 + x] === 1) {
+          cell.style.backgroundColor = 'black';
+        }
+        cell.classList.add('cell');
+        cell.addEventListener('mousemove', () => {
+          if (keyDown) {
+            if (clear) {
+              cell.style.backgroundColor = '';
+              map[y * 100 + x] = 0;
+            } else {
+              cell.style.backgroundColor = 'black';
+              map[y * 100 + x] = 1;
+            }
+          }
+        })
+        container.appendChild(cell);
+      }
+    }
+
+    // keydown 只支持鼠标触发，使用触控板时不会触发事件。 https://developer.mozilla.org/zh-CN/docs/Web/API/KeyboardEvent
+    // pointerdown 指针事件，支持鼠标、触控板、触控屏幕等。 https://developer.mozilla.org/zh-CN/docs/Web/API/Pointer_events
+    document.addEventListener('pointerdown', (e) => {
+      keyDown = true;
+      clear = (e.which === 3);
+    })
+    document.addEventListener('pointerup', (e) => {
+      keyDown = false;
+    })
+    // 阻止右键菜单弹出
+    document.addEventListener('contextmenu', e => e.preventDefault())
+
+    document.getElementById('save').addEventListener('click', () => {
+      localStorage['map'] = JSON.stringify(map);
+    })
+  }
+
+  function sleep(t) {
+    return new Promise((resolve, reject) => {
+      setTimeout(resolve, t)
+    })
+  }
+
+  async function findPath(map, start, end) {
+    let table = Object.create(map);
+    let queue = new Sorted([start], (a, b) => distance(a) - distance(b));
+
+    async function insert(x, y, prev) {
+      // 走到地图之外
+      if (x < 0 || x >= 100 || y < 0 || y >= 100) {
+        return false;
+      }
+      // 碰到墙壁或者走过
+      if (table[y * 100 + x]) {
+        // container.children[y * 100 + x].style.backgroundColor = 'red';
+        return true;
+      }
+
+      container.children[y * 100 + x].style.backgroundColor = 'lightgreen';
+      table[y * 100 + x] = prev;
+      queue.give([x, y]);
+      return true;
+    }
+
+    // 算某点到终点的直线距离
+    function distance(point) {
+      // 勾股定理
+      return (end[0] - point[0]) ** 2 + (end[1] - point[1]) ** 2;
+    }
+
+    while (queue.length) {
+      let [x, y] = queue.take();
+      console.log(x, y);
+      if (x === end[0] && y === end[1]) {
+        let path = [];
+        // 高亮终点
+        container.children[y * 100 + x].style.backgroundColor = 'red';
+
+        while (x !== start[0] || y !== start[1]) {
+          path.push(map[y * 100 + x]);
+          [x, y] = table[y * 100 + x];
+          await sleep(5);
+          container.children[y * 100 + x].style.backgroundColor = 'blue';
+        }
+
+        return path;
+      }
+
+      let isArrivTop = await insert(x, y - 1, [x, y]); // 上
+      let isArrivBottom = await insert(x, y + 1, [x, y]); // 下
+      let isArrivLeft = await insert(x - 1, y, [x, y]); // 左
+      let isArrivRight = await insert(x + 1, y, [x, y]); // 右
+
+      if (!(isArrivLeft && isArrivTop)) {
+        await insert(x - 1, y - 1, [x, y]); // 左上
+      }
+      if (!(isArrivRight && isArrivBottom)) {
+        await insert(x + 1, y + 1, [x, y]); // 右下
+      }
+      if (!(isArrivLeft && isArrivBottom)) {
+        await insert(x - 1, y + 1, [x, y]); // 左下
+      }
+      if (!(isArrivRight && isArrivTop)) {
+        await insert(x + 1, y - 1, [x, y]); // 右上
+      }
+    }
+
+    return null;
+  }
+
+  initMap();
+
+// findPath(map, [0,0], [5, 0])
+findPath(map, [0,0], [50, 50])
+// findPath(map, [99, 99], [95, 99])
+</script>
