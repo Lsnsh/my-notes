@@ -1,10 +1,8 @@
 # 程序设计入门——C 语言
 
-中国大学 MOOC：
-https://www.icourse163.org/course/ZJU-199001
-
-C 语言自学攻略-陈越姥姥：
-https://weibo.com/ttarticle/p/show?id=2309404469829309432076
+- [程序设计入门——C 语言-中国大学 MOOC](https://www.icourse163.org/course/ZJU-199001)
+- [C 语言自学攻略-陈越姥姥](https://weibo.com/ttarticle/p/show?id=2309404469829309432076)
+- [在线 C 语言开发环境](https://clin.icourse163.org/)
 
 ## 大纲
 
@@ -17,7 +15,3 @@ https://weibo.com/ttarticle/p/show?id=2309404469829309432076
 - 第 7 周：数组与运算
 - 第 8 周：指针与字符串
 - 期末考试
-
-## 工具
-
-- 在线 C 语言开发环境：https://clin.icourse163.org/
